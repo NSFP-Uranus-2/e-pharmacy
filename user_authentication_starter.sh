@@ -185,43 +185,90 @@ self_registration(){
     register_credentials "$username" "$password" "$fullname" "$role"
 }
 
-
+# Admin_credentials
+admin_username="Admin"
+admin_password="Admin@1234"
 admin_registration(){
     echo "===== Admin Registration ====="
-    echo "Select option:"
-    echo "1. admin_register"
-    echo "2. register_other_users"
-    read -p "Enter your registration choice:" admin_option
-    echo $admin_option
 
-case $admin_option in
-    1)
-        admin_register
-        ;;
-    2)
-        register_other_users
-        ;;
-    *)
-        echo "Invalid choice. Please enter a valid option!"
-        ;;
-    esac
-    read -p "Enter username: " username
-    read -s -p "Enter password: " password
+    read -p "Admin username:" input_username
+    read -s -p "Enter admin password:" input_password
     echo
-    # read -s -p "Confirm password: " password
-    # echo
-    read -p "Enter full name: " fullname
 
-    while true; do
-        read -p "Enter your role (admin/normal/salesperson): " role
-        if [[ "$role" == "admin" || "$role" == "normal" || "$role" == "salesperson" ]]; then
-            break
-        else
-            echo "Invalid role. Please enter a valid role."
-        fi
-    done
-register_credentials $username $password $fullname $role
-} 
+    if [[ "$input_username" == "$admin_username" && "$input_password" == "$admin_password" ]]; then
+        echo "Admin successfully registered."
+    # else
+    # echo "Invalid admin credentials. Only Admin access"
+# fi
+# admin_registration
+        while true; do
+            read -p "Do you want to register another user? (yes/no): " continue_register
+            if [[ "$continue_register" == "yes" ]]; then 
+                read -p "Enter username: " username
+                read -s -p "Enter password: " password
+                echo
+                read -p "Enter full name: " fullname
+
+                while true; do
+                    read -p "Enter user role (admin/normal/salesperson): " role
+                    if [[ "$role" == "admin" || "$role" == "normal" || "$role" == "salesperson" ]]; then
+                        break
+                    else 
+                        echo "Invalid role. Please enter a valid role"
+                    fi
+                done
+                register_credentials "$username" "$password" "$fullname" "$role"
+            else
+                echo "Thank you for your time"
+                break
+            fi
+        done
+    else
+        echo "Invalid admin credentials. Only Admin can access"    
+fi
+}
+
+
+
+
+
+
+
+    # CODES FOR MY PREVIOUS FOR ADMIN CHOICE
+#     echo "Select option:"
+#     echo "1. admin_register"
+#     echo "2. register_other_users"
+#     read -p "Enter your registration choice:" admin_option
+#     echo $admin_option
+
+# case $admin_option in
+#     1)
+#         admin_register
+#         ;;
+#     2)
+#         register_other_users
+#         ;;
+#     *)
+#         echo "Invalid choice. Please enter a valid option!"
+#         ;;
+#     esac
+#     read -p "Enter username: " username
+#     read -s -p "Enter password: " password
+#     echo
+#     # read -s -p "Confirm password: " password
+#     # echo
+#     read -p "Enter full name: " fullname
+
+#     while true; do
+#         read -p "Enter your role (admin/normal/salesperson): " role
+#         if [[ "$role" == "admin" || "$role" == "normal" || "$role" == "salesperson" ]]; then
+#             break
+#         else
+#             echo "Invalid role. Please enter a valid role."
+#         fi
+#     done
+# register_credentials $username $password $fullname $role
+# } 
 
 
 logout() {
