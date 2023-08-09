@@ -63,7 +63,7 @@ register_credentials() {
     hashed_pwd=$(hash_password "$password" "$salt")
     ## append the line in the specified format to the credentials file (see below)
     ## username:hash:salt:fullname:role:is_logged_in
-    echo "$username:$hashed_pwd:$salt:$fullname:$role:1"  >> $credentials_file
+    echo "$username:$hashed_pwd:$salt:$fullname:$role:0"  >> $credentials_file
     echo "$username registered successfully"
     # return 0
 }
@@ -199,8 +199,8 @@ admin_registration(){
 fi
 }
 
-# Logout function
-exit() {
+# Logout and delete account function(in this exiting function a user choose if he wants to logout or to delete account)
+exiting() {
     echo "==== Exit ====="
     echo "1. Logout"
     echo "2. Delete Account"
@@ -216,6 +216,7 @@ case $exit_option in
         ;;
     *)
         echo "Invalid choice. Please enter valid option"
+        exit 0
     esac    
 }
     logout (){
@@ -247,8 +248,8 @@ delete_account (){
     # checking if the file exist in the credentials
     if grep -q "^$delete_username:" "$credentials_file"; then
         # checking the new credentials file
-        grep -v "^$delete_username:" "$credentials_file" > "$credentilas_file.tmp"
-        mv "$credentials_file.tmp" "$credentilas_file"
+        grep -v "^$delete_username:" "$credentials_file" > "$credentials_file.tmp"
+        mv "$credentials_file.tmp" "$credentials_file"
         echo "Account $delete_username" has been deleted.
     else 
         echo "Account $delete_username not found."
@@ -278,7 +279,7 @@ case $option in
         register
         ;;
     3)
-        exit
+        exiting
         ;;
     4)
         echo "Closing the program. Goodbye!"
