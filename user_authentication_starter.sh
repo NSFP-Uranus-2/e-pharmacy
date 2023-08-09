@@ -32,10 +32,10 @@ check_existing_username(){
     if grep -q "^$username:" "$credentials_file"; then
         echo "$username already exists."
         return 0
-
     fi
         return 1
 }
+
 
 ## function to add new credentials to the file
 register_credentials() {
@@ -46,20 +46,15 @@ register_credentials() {
     username="$1"
     password="$2"
     fullname="$3"
-    
+    role=${4:-"normal"}
 
     ## call the function to check if the username exists
     check_existing_username $username
-    #TODO: if it exists, safely fails from the function.
+    #if it exists, safely fails from the function.
     if [ $? -eq 0 ]; then
         echo "Registration failed: username exists"
         return 1
     fi
-
-    role=${4:-"normal"}
-    ## retrieve the role. Defaults to "normal" if the 4th argument is not passed
-    
-    ## check if the role is valid. Should be either normal, salesperson, or admin
 
     ## first generate a salt
     salt=`generate_salt`
@@ -68,10 +63,11 @@ register_credentials() {
     hashed_pwd=$(hash_password "$password" "$salt")
     ## append the line in the specified format to the credentials file (see below)
     ## username:hash:salt:fullname:role:is_logged_in
-    echo "$username:$hashed_pwd:$salt:$fullname:$role:0"  >> $credentials_file
+    echo "$username:$hashed_pwd:$salt:$fullname:$role:1"  >> $credentials_file
     echo "$username registered successfully"
     # return 0
 }
+
 
 # Function to verify credentials
 verify_credentials() {
@@ -94,9 +90,6 @@ verify_credentials() {
     # comparering the stored hashed pwd
     if [ "$input_hashed_pwd" = "$stored_hashed_pwd" ]; then
         echo "$username" > "$PROJECT_HOME/.logged_in"
-    #     echo "Login successful"
-    # else 
-    #     echo "Invalid password"
     fi
 }
 
@@ -207,8 +200,25 @@ fi
 }
 
 # Logout function
-logout() {
+exit() {
+    echo "==== Exit ====="
+    echo "1. Logout"
+    echo "2. Delete Account"
+    read -p "Enter your choice:" exit_option
+    echo "$exit_option"
 
+case $exit_option in
+    1)
+        logout
+        ;;
+    2)  
+        delete_account
+        ;;
+    *)
+        echo "Invalid choice. Please enter valid option"
+    esac    
+}
+    logout (){
     #TODO: check that the .logged_in file is not empty
     if [ -s "$PROJECT_HOME/.logged_in" ]; then
     # if the file exists and is not empty, read its content to retrieve the username of the currently logged in user
@@ -228,13 +238,33 @@ fi
     # exit 0
 }
 
+# #### BONUS
+# function to delete an account from the file
+delete_account (){
+    echo "===== Delete Account ====="
+    read -p "Enter the username of the account you want to delete: " delete_username
+
+    # checking if the file exist in the credentials
+    if grep -q "^$delete_username:" "$credentials_file"; then
+        # checking the new credentials file
+        grep -v "^$delete_username:" "$credentials_file" > "$credentilas_file.tmp"
+        mv "$credentials_file.tmp" "$credentilas_file"
+        echo "Account $delete_username" has been deleted.
+    else 
+        echo "Account $delete_username not found."
+    fi
+
+    read -p "Press Enter to continue.."
+
+}
+
 # Welcome Menu function
 welcome_menu() {
     echo "Welcome to the authentication system."
     echo "Select option:"
     echo "1. Login"
     echo "2. Register"
-    echo "3. Logout"
+    echo "3. Exit"
     echo "4. Close the program"
     read -p "Enter your choice:" option
     echo $option
@@ -248,7 +278,7 @@ case $option in
         register
         ;;
     3)
-        logout
+        exit
         ;;
     4)
         echo "Closing the program. Goodbye!"
@@ -259,18 +289,4 @@ case $option in
         ;;
     esac
 }
-
-## Create the menu for the application
-# at the start, we need an option to login, self-register (role defaults to normal)
-# and exit the application.
-
-# After the user is logged in, display a menu for logging out.
-# if the user is also an admin, add an option to create an account using the 
-# provided functions.
-
-# Main script execution starts here
 welcome_menu
-
-
-#### BONUS
-#1. Implement a function to delete an account from the file
