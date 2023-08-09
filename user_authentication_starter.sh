@@ -43,7 +43,6 @@ register_credentials() {
     # arg2 is the password
     # arg3 is the fullname of the user
     # arg4 (optional) is the role. Defaults to "normal"
-    # echo "===== User Registration ====="
     username="$1"
     password="$2"
     fullname="$3"
@@ -80,8 +79,8 @@ verify_credentials() {
     ## arg2 is password
     username=$1
     password=$2
-    ## retrieve the stored hash, and the salt from the credentials file
 
+    ## retrieve the stored hash, and the salt from the credentials file
     stored_data=$(grep "^$username:" "$credentials_file")
     if [ -z "$stored_data" ]; then
         echo "Invalid username "
@@ -95,22 +94,10 @@ verify_credentials() {
     # comparering the stored hashed pwd
     if [ "$input_hashed_pwd" = "$stored_hashed_pwd" ]; then
         echo "$username" > "$PROJECT_HOME/.logged_in"
-        # sed -i "s/^$username:.*/$username:1/" "$credentials_file"
-        echo "Login successful"
-    else 
-        echo "Invalid password"
+    #     echo "Login successful"
+    # else 
+    #     echo "Invalid password"
     fi
-    # if [[ "$username" == "username" && "$password" == "password"]]; then
-    #     return 0
-    # else
-    #     return 1
-    # fi
-    # # stored_hash=$(grep "$stored_data" | cut -d ":" -f 2)
-    # stored_salt=$(echo "$stored_data" | cut -d ":" -f 3)
-    ## Check if the credentials file exists, if not, create it.
-    # if [ ! -e "$credentials_file" ]; then
-    #     touch "$credentilas_file"
-    # fi
 }
 
 # Login function
@@ -135,22 +122,13 @@ login() {
 
     if [ "$input_hashed_pwd" = "$stored_hash" ]; then
         echo "$username" > "$PROJECT_HOME/.logged_in"
-        echo "Welcome $username, you have successfully logged in..."
+        echo "Welcome $username, you have successfully logged in as normal..."
     else
         echo "Invalid password"
     fi
     return 0
-    # echo "Debug: Username: $username, password: $password"
-    verify_credentials "$username" "$password"
-    # verify_exit_code=$?
-    
-    # if [ $? -eq 0 ]; then
-    #     echo "Welcome $username you have successfully logged in..."
-    # else
-    #     echo "Invalid username or password".
-    # fi
-    # exit 0
 
+    verify_credentials "$username" "$password"
 }
 
 
@@ -177,6 +155,7 @@ case $registration_option in
 }
 self_registration(){
     echo "====== Self Registration==="
+
     read -p "Enter username: " username
     read -s -p "Enter password: " password
     echo
@@ -188,6 +167,7 @@ self_registration(){
 # Admin_credentials
 admin_username="Admin"
 admin_password="Admin@1234"
+
 admin_registration(){
     echo "===== Admin Registration ====="
 
@@ -197,9 +177,7 @@ admin_registration(){
 
     if [[ "$input_username" == "$admin_username" && "$input_password" == "$admin_password" ]]; then
         echo "Admin successfully registered."
-    # else
-    # echo "Invalid admin credentials. Only Admin access"
-# fi
+
 # admin_registration
         while true; do
             read -p "Do you want to register another user? (yes/no): " continue_register
@@ -228,58 +206,29 @@ admin_registration(){
 fi
 }
 
-
-
-
-
-
-
-    # CODES FOR MY PREVIOUS FOR ADMIN CHOICE
-#     echo "Select option:"
-#     echo "1. admin_register"
-#     echo "2. register_other_users"
-#     read -p "Enter your registration choice:" admin_option
-#     echo $admin_option
-
-# case $admin_option in
-#     1)
-#         admin_register
-#         ;;
-#     2)
-#         register_other_users
-#         ;;
-#     *)
-#         echo "Invalid choice. Please enter a valid option!"
-#         ;;
-#     esac
-#     read -p "Enter username: " username
-#     read -s -p "Enter password: " password
-#     echo
-#     # read -s -p "Confirm password: " password
-#     # echo
-#     read -p "Enter full name: " fullname
-
-#     while true; do
-#         read -p "Enter your role (admin/normal/salesperson): " role
-#         if [[ "$role" == "admin" || "$role" == "normal" || "$role" == "salesperson" ]]; then
-#             break
-#         else
-#             echo "Invalid role. Please enter a valid role."
-#         fi
-#     done
-# register_credentials $username $password $fullname $role
-# } 
-
-
+# Logout function
 logout() {
 
     #TODO: check that the .logged_in file is not empty
-    # if the file exists and is not empty, read its content to retrieve the username
-    # of the currently logged in user
+    if [ -s "$PROJECT_HOME/.logged_in" ]; then
+    # if the file exists and is not empty, read its content to retrieve the username of the currently logged in user
+    username=$(cat "$PROJECT_HOME/.logged_in")
+    
+    # delete the existing logged_in_file
+    rm "$PROJECT_HOME/.logged_in"
+
 
     # then delete the existing .logged_in file and update the credentials file by changing the last field to 0
-    exit 0
+    sed -i "s/^$username:.*$/&:0/" "$credentials_file"
+
+    echo "Logged out successfully"
+else
+    echo "No user is currently logged in."
+fi
+    # exit 0
 }
+
+# Welcome Menu function
 welcome_menu() {
     echo "Welcome to the authentication system."
     echo "Select option:"
