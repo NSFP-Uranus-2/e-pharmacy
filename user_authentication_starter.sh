@@ -29,12 +29,12 @@ hash_password() {
 check_existing_username(){
     username=$1
     ## verify if a username is already included in the credentials file
-    if grep -q "$username:" "$credentials_file"; then
+    if grep -q "^$username:" "$credentials_file"; then
         echo "$username already exists."
-        return 1
+        return 0
 
     fi
-    return 0
+        return 1
 }
 
 ## function to add new credentials to the file
@@ -47,31 +47,31 @@ register_credentials() {
     username="$1"
     password="$2"
     fullname="$3"
-    role="${4:-normal}"
     
 
     ## call the function to check if the username exists
     check_existing_username $username
     #TODO: if it exists, safely fails from the function.
-    # if [$? -ne 0]; then
-    #     return 1
-    # fi
-    ## retrieve the role. Defaults to "normal" if the 4th argument is not passed
-    if [ -z "$role" ]; then
-        role="normal"
-
+    if [ $? -eq 0 ]; then
+        echo "Registration failed: username exists"
+        return 1
     fi
+
+    role=${4:-"normal"}
+    ## retrieve the role. Defaults to "normal" if the 4th argument is not passed
+    
     ## check if the role is valid. Should be either normal, salesperson, or admin
 
     ## first generate a salt
     salt=`generate_salt`
     ## then hash the password with the salt
-    hashed_pwd=`hash_password $password $salt`
+    # hashed_pwd=`hash_password $password $salt`
+    hashed_pwd=$(hash_password "$password" "$salt")
     ## append the line in the specified format to the credentials file (see below)
     ## username:hash:salt:fullname:role:is_logged_in
     echo "$username:$hashed_pwd:$salt:$fullname:$role:0"  >> $credentials_file
-    # echo "$username registered successfully"
-    return 0
+    echo "$username registered successfully"
+    # return 0
 }
 
 # Function to verify credentials
@@ -83,38 +83,74 @@ verify_credentials() {
     ## retrieve the stored hash, and the salt from the credentials file
 
     stored_data=$(grep "^$username:" "$credentials_file")
+    if [ -z "$stored_data" ]; then
+        echo "Invalid username "
+        return 1
+    fi
     stored_hash=$(echo "$stored_data" | cut -d ":" -f 2)
     stored_salt=$(echo "$stored_data" | cut -d ":" -f 3)
     # if there is no line, then return 1 and output "Invalid username"
-    if [ -z "$stored_hashed_pwd" ]; then
-        echo "Invalid username or password"
-        return 1
-    fi
-    input_hashed_pwd=$(hash_password "$password" "$salt")
+    # compute the hash based on the provdied password
+    input_hashed_pwd=$(hash_password "$password" "$stored_salt")
     # comparering the stored hashed pwd
-    if [ "$stored_hashed_pwd" = "$input_hashed_pwd" ]; then
-        return 0
+    if [ "$input_hashed_pwd" = "$stored_hashed_pwd" ]; then
+        echo "$username" > "$PROJECT_HOME/.logged_in"
+        # sed -i "s/^$username:.*/$username:1/" "$credentials_file"
+        echo "Login successful"
     else 
-        return 1
+        echo "Invalid password"
     fi
-    
-    # stored_hash=$(grep "$stored_data" | cut -d ":" -f 2)
+    # if [[ "$username" == "username" && "$password" == "password"]]; then
+    #     return 0
+    # else
+    #     return 1
+    # fi
+    # # stored_hash=$(grep "$stored_data" | cut -d ":" -f 2)
     # stored_salt=$(echo "$stored_data" | cut -d ":" -f 3)
     ## Check if the credentials file exists, if not, create it.
-    if [ ! -e "$credentials_file" ]; then
-        touch "$credentilas_file"
-    fi
+    # if [ ! -e "$credentials_file" ]; then
+    #     touch "$credentilas_file"
+    # fi
 }
 
 # Login function
 login() {
     echo "===== Login ====="
     read -p "Enter username: " username
-    read -s -p "Enter password: " password
+    stored_data=.$(grep "^$username:" "$credentials_file")
 
-    verify_credentials $username $password
-    echo "Welcome $username you have successfully logged in as normal."
+    if [ -z "$stored_data" ]; then
+        echo ""Invalid username
+        return 1
+    
+    fi
+
+
+    read -s -p "Enter password: " password
+    echo
+
+    stored_hash=$(echo "$stored_data" | cut -d ":" -f 2)
+    stored_salt=$(echo "$stored_data" | cut -d ":" -f 3)
+    input_hashed_pwd=$(hash_password "$password" "$stored_salt")
+
+    if [ "$input_hashed_pwd" = "$stored_hash" ]; then
+        echo "$username" > "$PROJECT_HOME/.logged_in"
+        echo "Welcome $username, you have successfully logged in..."
+    else
+        echo "Invalid password"
+    fi
+    return 0
+    # echo "Debug: Username: $username, password: $password"
+    verify_credentials "$username" "$password"
+    # verify_exit_code=$?
+    
+    # if [ $? -eq 0 ]; then
+    #     echo "Welcome $username you have successfully logged in..."
+    # else
+    #     echo "Invalid username or password".
+    # fi
     # exit 0
+
 }
 
 
@@ -152,6 +188,23 @@ self_registration(){
 
 admin_registration(){
     echo "===== Admin Registration ====="
+    echo "Select option:"
+    echo "1. admin_register"
+    echo "2. register_other_users"
+    read -p "Enter your registration choice:" admin_option
+    echo $admin_option
+
+case $admin_option in
+    1)
+        admin_register
+        ;;
+    2)
+        register_other_users
+        ;;
+    *)
+        echo "Invalid choice. Please enter a valid option!"
+        ;;
+    esac
     read -p "Enter username: " username
     read -s -p "Enter password: " password
     echo
